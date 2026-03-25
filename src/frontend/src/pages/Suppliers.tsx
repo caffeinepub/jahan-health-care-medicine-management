@@ -18,7 +18,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Building2, Edit2, Loader2, Plus, Trash2 } from "lucide-react";
+import { Building2, Edit2, Loader2, Plus, Printer, Trash2 } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
 import type { Supplier } from "../backend.d";
@@ -73,26 +73,48 @@ export function Suppliers() {
     }
   };
 
+  const printDate = new Date().toLocaleDateString();
+
   return (
     <div className="space-y-5" data-ocid="suppliers.page">
-      <div className="flex items-center justify-between">
+      {/* Print-only header */}
+      <div className="print-only hidden">
+        <h1 className="text-xl font-bold text-center">
+          Jahan Health Care Nursing Home
+        </h1>
+        <p className="text-center text-sm">
+          Suppliers Report — Printed: {printDate}
+        </p>
+        <hr className="my-2" />
+      </div>
+
+      <div className="flex items-center justify-between no-print">
         <div>
           <h2 className="text-2xl font-bold text-foreground">Suppliers</h2>
           <p className="text-sm text-muted-foreground mt-0.5">
             Manage medicine suppliers and their contact details
           </p>
         </div>
-        <Button
-          onClick={() => {
-            setForm(EMPTY);
-            setErrors({});
-            setOpen(true);
-          }}
-          data-ocid="suppliers.add_supplier.button"
-          className="bg-primary hover:bg-primary/90 text-white"
-        >
-          <Plus size={16} className="mr-2" /> Add Supplier
-        </Button>
+        <div className="flex gap-2">
+          <Button
+            variant="outline"
+            onClick={() => window.print()}
+            data-ocid="suppliers.print.button"
+          >
+            <Printer size={15} className="mr-2" /> Print Report
+          </Button>
+          <Button
+            onClick={() => {
+              setForm(EMPTY);
+              setErrors({});
+              setOpen(true);
+            }}
+            data-ocid="suppliers.add_supplier.button"
+            className="bg-primary hover:bg-primary/90 text-white"
+          >
+            <Plus size={16} className="mr-2" /> Add Supplier
+          </Button>
+        </div>
       </div>
 
       <Card className="shadow-card">
@@ -124,7 +146,7 @@ export function Suppliers() {
                   <TableHead className="text-xs font-semibold uppercase tracking-wide">
                     Address
                   </TableHead>
-                  <TableHead className="text-xs font-semibold uppercase tracking-wide w-16">
+                  <TableHead className="text-xs font-semibold uppercase tracking-wide w-16 no-print">
                     Actions
                   </TableHead>
                 </TableRow>
@@ -165,7 +187,7 @@ export function Suppliers() {
                       </TableCell>
                       <TableCell>
                         <div className="flex items-center gap-2">
-                          <div className="w-7 h-7 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
+                          <div className="w-7 h-7 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0 no-print">
                             <Building2 size={12} className="text-primary" />
                           </div>
                           <span className="text-sm font-semibold">
@@ -185,7 +207,7 @@ export function Suppliers() {
                       <TableCell className="text-sm text-muted-foreground max-w-[200px] truncate">
                         {sup.address || "—"}
                       </TableCell>
-                      <TableCell>
+                      <TableCell className="no-print">
                         <div className="flex gap-1">
                           <button
                             type="button"

@@ -25,7 +25,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Edit2, Loader2, Plus, Search, Trash2 } from "lucide-react";
+import { Edit2, Loader2, Plus, Printer, Search, Trash2 } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
 import type { Medicine } from "../backend.d";
@@ -57,6 +57,8 @@ export function MedicineStock() {
   const [form, setForm] = useState(EMPTY_FORM);
   const [search, setSearch] = useState("");
   const [errors, setErrors] = useState<Record<string, string>>({});
+
+  const printDate = new Date().toLocaleDateString();
 
   const validate = () => {
     const e: Record<string, string> = {};
@@ -115,28 +117,46 @@ export function MedicineStock() {
 
   return (
     <div className="space-y-5" data-ocid="stock.page">
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between no-print">
         <div>
           <h2 className="text-2xl font-bold text-foreground">Medicine Stock</h2>
           <p className="text-sm text-muted-foreground mt-0.5">
             Manage inventory, batch numbers, and expiry dates
           </p>
         </div>
-        <Button
-          onClick={() => {
-            setForm(EMPTY_FORM);
-            setErrors({});
-            setOpen(true);
-          }}
-          data-ocid="stock.add_medicine.button"
-          className="bg-primary hover:bg-primary/90 text-white"
-        >
-          <Plus size={16} className="mr-2" /> Add Medicine
-        </Button>
+        <div className="flex items-center gap-2">
+          <Button
+            variant="outline"
+            onClick={() => window.print()}
+            data-ocid="stock.print.button"
+            className="border-primary/30 text-primary hover:bg-primary/10"
+          >
+            <Printer size={16} className="mr-2" /> Print Report
+          </Button>
+          <Button
+            onClick={() => {
+              setForm(EMPTY_FORM);
+              setErrors({});
+              setOpen(true);
+            }}
+            data-ocid="stock.add_medicine.button"
+            className="bg-primary hover:bg-primary/90 text-white"
+          >
+            <Plus size={16} className="mr-2" /> Add Medicine
+          </Button>
+        </div>
+      </div>
+
+      {/* Print-only header */}
+      <div className="print-only">
+        <h1 className="text-xl font-bold">Jahan Health Care Nursing Home</h1>
+        <h2 className="text-base font-semibold mt-1">Medicine Stock Report</h2>
+        <p className="text-sm mt-0.5">Printed on: {printDate}</p>
+        <hr className="mt-2 mb-4" />
       </div>
 
       <Card className="shadow-card">
-        <CardHeader className="pb-3">
+        <CardHeader className="pb-3 no-print">
           <div className="flex items-center gap-3">
             <div className="relative flex-1 max-w-sm">
               <Search
@@ -191,7 +211,7 @@ export function MedicineStock() {
                   <TableHead className="text-xs font-semibold uppercase tracking-wide">
                     Status
                   </TableHead>
-                  <TableHead className="text-xs font-semibold uppercase tracking-wide w-16">
+                  <TableHead className="text-xs font-semibold uppercase tracking-wide w-16 no-print">
                     Actions
                   </TableHead>
                 </TableRow>
@@ -272,7 +292,7 @@ export function MedicineStock() {
                         <TableCell>
                           <StatusBadge status={status} />
                         </TableCell>
-                        <TableCell>
+                        <TableCell className="no-print">
                           <div className="flex gap-1">
                             <button
                               type="button"

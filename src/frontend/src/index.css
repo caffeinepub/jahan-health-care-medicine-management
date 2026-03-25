@@ -68,3 +68,137 @@
     font-family: "Plus Jakarta Sans", sans-serif;
   }
 }
+
+/* ============================================================
+   PRINT STYLES
+   ============================================================ */
+
+.print-only {
+  display: none;
+}
+
+@media print {
+  @page {
+    size: A4 landscape;
+    margin: 1cm;
+  }
+
+  /* Show print-only elements */
+  .print-only {
+    display: block !important;
+    color: #000 !important;
+  }
+
+  /* Hide no-print elements */
+  .no-print {
+    display: none !important;
+  }
+
+  /* Hide sidebar & layout chrome */
+  [data-sidebar],
+  aside,
+  nav,
+  header {
+    display: none !important;
+  }
+
+  /* Hide all buttons */
+  button,
+  [role="button"] {
+    display: none !important;
+  }
+
+  /* Hide inputs and selects (search bar, filters) */
+  input,
+  select,
+  [role="combobox"],
+  [data-ocid="stock.search_input"],
+  [data-ocid="reports.dept_filter.select"] {
+    display: none !important;
+  }
+
+  /* Hide dialogs */
+  [role="dialog"],
+  [data-state="open"] {
+    display: none !important;
+  }
+
+  /* Reset page layout */
+  body {
+    background: #fff !important;
+    color: #000 !important;
+    font-size: 11px !important;
+  }
+
+  /* Make main content full width */
+  main,
+  [data-ocid$=".page"] {
+    width: 100% !important;
+    padding: 0 !important;
+    margin: 0 !important;
+  }
+
+  /* Table styles for print */
+  table {
+    width: 100% !important;
+    border-collapse: collapse !important;
+    font-size: 11px !important;
+    box-shadow: none !important;
+  }
+
+  th,
+  td {
+    border: 1px solid #ccc !important;
+    padding: 4px 6px !important;
+    background: #fff !important;
+    color: #000 !important;
+  }
+
+  th {
+    background: #f0f0f0 !important;
+    font-weight: 700 !important;
+  }
+
+  tr:nth-child(even) td {
+    background: #fafafa !important;
+  }
+
+  /* Remove card shadows and rounded corners */
+  .shadow-card,
+  [class*="rounded"],
+  [class*="shadow"] {
+    border-radius: 0 !important;
+    box-shadow: none !important;
+    border: none !important;
+  }
+
+  /* Avoid page breaks inside rows */
+  tr {
+    page-break-inside: avoid;
+  }
+
+  /* Print header styling */
+  .print-only h1 {
+    font-size: 16px !important;
+    font-weight: 800 !important;
+    margin: 0 !important;
+  }
+
+  .print-only h2 {
+    font-size: 13px !important;
+    font-weight: 600 !important;
+    margin: 4px 0 0 !important;
+  }
+
+  .print-only p {
+    font-size: 11px !important;
+    margin: 2px 0 0 !important;
+    color: #444 !important;
+  }
+
+  .print-only hr {
+    border: none !important;
+    border-top: 1.5px solid #000 !important;
+    margin: 8px 0 12px !important;
+  }
+}

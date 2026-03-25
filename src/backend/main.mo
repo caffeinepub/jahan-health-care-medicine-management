@@ -28,23 +28,14 @@ actor {
 
   // User Profile Management
   public query ({ caller }) func getCallerUserProfile() : async ?UserProfile {
-    if (not (AccessControl.hasPermission(accessControlState, caller, #user))) {
-      Runtime.trap("Unauthorized: Only users can view profiles");
-    };
     userProfiles.get(caller);
   };
 
   public query ({ caller }) func getUserProfile(user : Principal) : async ?UserProfile {
-    if (caller != user and not AccessControl.isAdmin(accessControlState, caller)) {
-      Runtime.trap("Unauthorized: Can only view your own profile");
-    };
     userProfiles.get(user);
   };
 
   public shared ({ caller }) func saveCallerUserProfile(profile : UserProfile) : async () {
-    if (not (AccessControl.hasPermission(accessControlState, caller, #user))) {
-      Runtime.trap("Unauthorized: Only users can save profiles");
-    };
     userProfiles.add(caller, profile);
   };
 
@@ -53,7 +44,7 @@ actor {
     id : Nat;
     name : Text;
     batchNo : Text;
-    expiryDate : Text; // ISO string e.g. "2024-06-12"
+    expiryDate : Text;
     manufacturer : Text;
     supplierID : Nat;
     unitRate : Float;
@@ -85,7 +76,7 @@ actor {
   type Bill = {
     id : Nat;
     supplierID : Nat;
-    billDate : Int; // Timestamp
+    billDate : Int;
     items : [BillItem];
     totalAmount : Float;
     paidAmount : Float;
@@ -96,7 +87,7 @@ actor {
     id : Nat;
     billID : Nat;
     amount : Float;
-    paymentDate : Int; // Timestamp
+    paymentDate : Int;
     note : Text;
   };
 
@@ -114,7 +105,7 @@ actor {
     medicineName : Text;
     quantity : Nat;
     department : Department;
-    issuedDate : Int; // Timestamp
+    issuedDate : Int;
     issuedBy : Text;
     note : Text;
   };
@@ -126,14 +117,12 @@ actor {
     totalStockValue : Float;
   };
 
-  // Comparison function for Bill by billDate
   module Bill {
     public func compareByBillDate(bill1 : Bill, bill2 : Bill) : Order.Order {
       Int.compare(bill1.billDate, bill2.billDate);
     };
   };
 
-  // PriceAmount type for sorting medicines by price
   type PriceAmount = {
     medicine : Medicine;
     totalPrice : Float;
@@ -145,11 +134,9 @@ actor {
     };
   };
 
-  // Caching for medicine list
   var cachedMedicineList : [(Nat, Medicine)] = [];
   var isMedicineListDirty = true;
 
-  // Data stores
   let medicines = Map.empty<Nat, Medicine>();
   let suppliers = Map.empty<Nat, Supplier>();
   let bills = Map.empty<Nat, Bill>();
@@ -163,10 +150,7 @@ actor {
   var nextDistributionID = 1;
 
   // Medicine management
-  public shared ({ caller }) func addMedicine(medicineInput : Medicine) : async Nat {
-    if (not (AccessControl.hasPermission(accessControlState, caller, #admin))) {
-      Runtime.trap("Unauthorized: Only admins can add medicine");
-    };
+  public shared func addMedicine(medicineInput : Medicine) : async Nat {
     let id = nextMedicineID;
     nextMedicineID += 1;
     let newMedicine : Medicine = {
@@ -178,20 +162,14 @@ actor {
     id;
   };
 
-  public query ({ caller }) func getMedicine(id : Nat) : async Medicine {
-    if (not (AccessControl.hasPermission(accessControlState, caller, #user))) {
-      Runtime.trap("Unauthorized: Only users can view medicine details");
-    };
+  public query func getMedicine(id : Nat) : async Medicine {
     switch (medicines.get(id)) {
       case (?medicine) { medicine };
       case (null) { Runtime.trap("Medicine not found") };
     };
   };
 
-  public query ({ caller }) func getAllMedicines() : async [Medicine] {
-    if (not (AccessControl.hasPermission(accessControlState, caller, #user))) {
-      Runtime.trap("Unauthorized: Only users can view medicines");
-    };
+  public query func getAllMedicines() : async [Medicine] {
     if (isMedicineListDirty) {
       cachedMedicineList := medicines.toArray();
       isMedicineListDirty := false;
@@ -199,10 +177,7 @@ actor {
     cachedMedicineList.map(func((_, medicine)) { medicine });
   };
 
-  public query ({ caller }) func getLowStockMedicines() : async [Medicine] {
-    if (not (AccessControl.hasPermission(accessControlState, caller, #user))) {
-      Runtime.trap("Unauthorized: Only users can view low stock medicines");
-    };
+  public query func getLowStockMedicines() : async [Medicine] {
     let lowStock = List.empty<Medicine>();
     let iter = medicines.values();
     iter.forEach(
@@ -216,10 +191,7 @@ actor {
   };
 
   // Supplier management
-  public shared ({ caller }) func addSupplier(supplierInput : Supplier) : async Nat {
-    if (not (AccessControl.hasPermission(accessControlState, caller, #admin))) {
-      Runtime.trap("Unauthorized: Only admins can add suppliers");
-    };
+  public shared func addSupplier(supplierInput : Supplier) : async Nat {
     let id = nextSupplierID;
     nextSupplierID += 1;
     let newSupplier : Supplier = {
@@ -230,28 +202,19 @@ actor {
     id;
   };
 
-  public query ({ caller }) func getSupplier(id : Nat) : async Supplier {
-    if (not (AccessControl.hasPermission(accessControlState, caller, #user))) {
-      Runtime.trap("Unauthorized: Only users can view supplier details");
-    };
+  public query func getSupplier(id : Nat) : async Supplier {
     switch (suppliers.get(id)) {
       case (?supplier) { supplier };
       case (null) { Runtime.trap("Supplier not found") };
     };
   };
 
-  public query ({ caller }) func getAllSuppliers() : async [Supplier] {
-    if (not (AccessControl.hasPermission(accessControlState, caller, #user))) {
-      Runtime.trap("Unauthorized: Only users can view suppliers");
-    };
+  public query func getAllSuppliers() : async [Supplier] {
     suppliers.values().toArray();
   };
 
   // Bill management
-  public shared ({ caller }) func addBill(billInput : Bill) : async Nat {
-    if (not (AccessControl.hasPermission(accessControlState, caller, #admin))) {
-      Runtime.trap("Unauthorized: Only admins can add bills");
-    };
+  public shared func addBill(billInput : Bill) : async Nat {
     let id = nextBillID;
     nextBillID += 1;
     let newBill : Bill = {
@@ -262,20 +225,14 @@ actor {
     id;
   };
 
-  public query ({ caller }) func getBill(id : Nat) : async Bill {
-    if (not (AccessControl.hasPermission(accessControlState, caller, #user))) {
-      Runtime.trap("Unauthorized: Only users can view bills");
-    };
+  public query func getBill(id : Nat) : async Bill {
     switch (bills.get(id)) {
       case (?bill) { bill };
       case (null) { Runtime.trap("Bill not found") };
     };
   };
 
-  public query ({ caller }) func getBillsBySupplier(supplierID : Nat) : async [Bill] {
-    if (not (AccessControl.hasPermission(accessControlState, caller, #user))) {
-      Runtime.trap("Unauthorized: Only users can view bills");
-    };
+  public query func getBillsBySupplier(supplierID : Nat) : async [Bill] {
     let supplierBills = List.empty<Bill>();
     let iter = bills.values();
     iter.forEach(
@@ -289,10 +246,7 @@ actor {
   };
 
   // Payment management
-  public shared ({ caller }) func addPayment(paymentInput : Payment) : async Nat {
-    if (not (AccessControl.hasPermission(accessControlState, caller, #admin))) {
-      Runtime.trap("Unauthorized: Only admins can add payments");
-    };
+  public shared func addPayment(paymentInput : Payment) : async Nat {
     let id = nextPaymentID;
     nextPaymentID += 1;
     let newPayment : Payment = {
@@ -303,10 +257,7 @@ actor {
     id;
   };
 
-  public query ({ caller }) func getPayment(id : Nat) : async Payment {
-    if (not (AccessControl.hasPermission(accessControlState, caller, #user))) {
-      Runtime.trap("Unauthorized: Only users can view payments");
-    };
+  public query func getPayment(id : Nat) : async Payment {
     switch (payments.get(id)) {
       case (?payment) { payment };
       case (null) { Runtime.trap("Payment not found") };
@@ -314,10 +265,7 @@ actor {
   };
 
   // Distribution management
-  public shared ({ caller }) func addDistribution(distributionInput : Distribution) : async Nat {
-    if (not (AccessControl.hasPermission(accessControlState, caller, #admin))) {
-      Runtime.trap("Unauthorized: Only admins can add distributions");
-    };
+  public shared func addDistribution(distributionInput : Distribution) : async Nat {
     let id = nextDistributionID;
     nextDistributionID += 1;
     let newDistribution : Distribution = {
@@ -328,20 +276,14 @@ actor {
     id;
   };
 
-  public query ({ caller }) func getDistribution(id : Nat) : async Distribution {
-    if (not (AccessControl.hasPermission(accessControlState, caller, #user))) {
-      Runtime.trap("Unauthorized: Only users can view distributions");
-    };
+  public query func getDistribution(id : Nat) : async Distribution {
     switch (distributions.get(id)) {
       case (?distribution) { distribution };
       case (null) { Runtime.trap("Distribution not found") };
     };
   };
 
-  public query ({ caller }) func getDistributionsByDepartment(department : Department) : async [Distribution] {
-    if (not (AccessControl.hasPermission(accessControlState, caller, #user))) {
-      Runtime.trap("Unauthorized: Only users can view distributions by department");
-    };
+  public query func getDistributionsByDepartment(department : Department) : async [Distribution] {
     let departmentDistributions = List.empty<Distribution>();
     let iter = distributions.values();
     iter.forEach(
@@ -355,10 +297,7 @@ actor {
   };
 
   // Dashboard stats
-  public query ({ caller }) func getDashboardStats() : async DashboardStats {
-    if (not (AccessControl.hasPermission(accessControlState, caller, #user))) {
-      Runtime.trap("Unauthorized: Only users can view dashboard stats");
-    };
+  public query func getDashboardStats() : async DashboardStats {
     let totalMedicineCount = medicines.size();
     let lowStockCount = medicines.values().foldLeft(
       0,
@@ -379,7 +318,6 @@ actor {
     };
   };
 
-  // Helper functions for optional values
   func optionCompare<T>(a : ?T, b : ?T, cmp : (T, T) -> Order.Order) : Order.Order {
     switch (a, b) {
       case (null, null) { #equal };

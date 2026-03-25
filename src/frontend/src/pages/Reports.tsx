@@ -1,3 +1,4 @@
+import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   Select,
@@ -15,7 +16,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { BarChart3 } from "lucide-react";
+import { BarChart3, Printer } from "lucide-react";
 import { useState } from "react";
 import { Department } from "../backend.d";
 import { useAllDistributions } from "../hooks/useQueries";
@@ -42,6 +43,10 @@ export function Reports() {
   const { data: allDist, isLoading } = useAllDistributions();
   const [filter, setFilter] = useState("all");
 
+  const printDate = new Date().toLocaleDateString();
+  const filterLabel =
+    DEPTS.find((d) => d.value === filter)?.label ?? "All Departments";
+
   const filtered =
     filter === "all"
       ? (allDist ?? [])
@@ -64,14 +69,34 @@ export function Reports() {
 
   return (
     <div className="space-y-6" data-ocid="reports.page">
-      <div>
-        <h2 className="text-2xl font-bold text-foreground">Reports</h2>
-        <p className="text-sm text-muted-foreground mt-0.5">
-          Distribution analytics across all departments
-        </p>
+      <div className="flex items-center justify-between no-print">
+        <div>
+          <h2 className="text-2xl font-bold text-foreground">Reports</h2>
+          <p className="text-sm text-muted-foreground mt-0.5">
+            Distribution analytics across all departments
+          </p>
+        </div>
+        <Button
+          variant="outline"
+          onClick={() => window.print()}
+          data-ocid="reports.print.button"
+          className="border-primary/30 text-primary hover:bg-primary/10"
+        >
+          <Printer size={16} className="mr-2" /> Print Report
+        </Button>
       </div>
 
-      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
+      {/* Print-only header */}
+      <div className="print-only">
+        <h1 className="text-xl font-bold">Jahan Health Care Nursing Home</h1>
+        <h2 className="text-base font-semibold mt-1">
+          Distribution Report — {filterLabel}
+        </h2>
+        <p className="text-sm mt-0.5">Printed on: {printDate}</p>
+        <hr className="mt-2 mb-4" />
+      </div>
+
+      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4 no-print">
         {deptSummary.map((ds) => (
           <Card key={ds.dept} className="shadow-card">
             <CardContent className="p-4">
@@ -103,12 +128,12 @@ export function Reports() {
         <CardHeader className="pb-3">
           <div className="flex items-center justify-between">
             <CardTitle className="text-base font-semibold flex items-center gap-2">
-              <BarChart3 size={16} className="text-primary" />
+              <BarChart3 size={16} className="text-primary no-print" />
               Distribution Log
             </CardTitle>
             <Select value={filter} onValueChange={setFilter}>
               <SelectTrigger
-                className="w-48 h-8 text-xs"
+                className="w-48 h-8 text-xs no-print"
                 data-ocid="reports.dept_filter.select"
               >
                 <SelectValue />

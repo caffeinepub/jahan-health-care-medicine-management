@@ -25,7 +25,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { CreditCard, Loader2, Plus, Trash2 } from "lucide-react";
+import { CreditCard, Loader2, Plus, Printer, Trash2 } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
 import type { Bill, BillItem, Payment } from "../backend.d";
@@ -171,9 +171,31 @@ export function BillsPayments() {
   const getSupplierName = (id: bigint) =>
     suppliers?.find((s) => s.id === id)?.name ?? "—";
 
+  const printDate = new Date().toLocaleDateString();
+  const totalDue = bills
+    ? bills.reduce((s, b) => s + (b.totalAmount - b.paidAmount), 0)
+    : 0;
+  const totalPaid = bills ? bills.reduce((s, b) => s + b.paidAmount, 0) : 0;
+
   return (
     <div className="space-y-5" data-ocid="bills.page">
-      <div className="flex items-center justify-between">
+      {/* Print-only header */}
+      <div className="print-only hidden">
+        <h1 className="text-xl font-bold text-center">
+          Jahan Health Care Nursing Home
+        </h1>
+        <p className="text-center text-sm">
+          Bills & Payments Report — Printed: {printDate}
+        </p>
+        <div className="flex justify-around mt-2 mb-2 text-sm">
+          <span>Total Bills: {bills?.length ?? 0}</span>
+          <span>Total Paid: {formatPKR(totalPaid)}</span>
+          <span>Total Due: {formatPKR(totalDue)}</span>
+        </div>
+        <hr className="my-2" />
+      </div>
+
+      <div className="flex items-center justify-between no-print">
         <div>
           <h2 className="text-2xl font-bold text-foreground">
             Bills & Payments
@@ -182,22 +204,31 @@ export function BillsPayments() {
             Track supplier invoices, payments, and outstanding dues
           </p>
         </div>
-        <Button
-          onClick={() => {
-            setBillErrors({});
-            setLineItems([mkLine()]);
-            setBillOpen(true);
-          }}
-          data-ocid="bills.add_bill.button"
-          className="bg-primary hover:bg-primary/90 text-white"
-        >
-          <Plus size={16} className="mr-2" /> Add Bill
-        </Button>
+        <div className="flex gap-2">
+          <Button
+            variant="outline"
+            onClick={() => window.print()}
+            data-ocid="bills.print.button"
+          >
+            <Printer size={15} className="mr-2" /> Print Report
+          </Button>
+          <Button
+            onClick={() => {
+              setBillErrors({});
+              setLineItems([mkLine()]);
+              setBillOpen(true);
+            }}
+            data-ocid="bills.add_bill.button"
+            className="bg-primary hover:bg-primary/90 text-white"
+          >
+            <Plus size={16} className="mr-2" /> Add Bill
+          </Button>
+        </div>
       </div>
 
       {/* Summary Cards */}
       {bills && bills.length > 0 && (
-        <div className="grid grid-cols-3 gap-4">
+        <div className="grid grid-cols-3 gap-4 no-print">
           {SUMMARY_KEYS.map((sk) => (
             <Card key={sk.key} className="shadow-card">
               <CardContent className="p-4">
@@ -214,7 +245,7 @@ export function BillsPayments() {
       )}
 
       <Card className="shadow-card">
-        <CardHeader className="pb-2">
+        <CardHeader className="pb-2 no-print">
           <p className="text-sm text-muted-foreground">
             {bills?.length ?? 0} bills total
           </p>
@@ -245,7 +276,7 @@ export function BillsPayments() {
                   <TableHead className="text-xs font-semibold uppercase tracking-wide">
                     Status
                   </TableHead>
-                  <TableHead className="text-xs font-semibold uppercase tracking-wide w-16">
+                  <TableHead className="text-xs font-semibold uppercase tracking-wide w-16 no-print">
                     Actions
                   </TableHead>
                 </TableRow>
@@ -302,7 +333,7 @@ export function BillsPayments() {
                       <TableCell>
                         <BillStatusBadge status={bill.status} />
                       </TableCell>
-                      <TableCell>
+                      <TableCell className="no-print">
                         {bill.status !== BillStatus.Paid && (
                           <Button
                             size="sm"
