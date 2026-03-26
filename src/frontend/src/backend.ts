@@ -172,6 +172,8 @@ export interface backendInterface {
     addMedicine(medicineInput: Medicine): Promise<bigint>;
     addPayment(paymentInput: Payment): Promise<bigint>;
     addSupplier(supplierInput: Supplier): Promise<bigint>;
+    updateSupplier(supplierInput: Supplier): Promise<boolean>;
+    deleteSupplier(id: bigint): Promise<boolean>;
     assignCallerUserRole(user: Principal, role: UserRole): Promise<void>;
     getAllMedicines(): Promise<Array<Medicine>>;
     getAllSuppliers(): Promise<Array<Supplier>>;
@@ -274,6 +276,34 @@ export class Backend implements backendInterface {
             }
         } else {
             const result = await this.actor.addSupplier(arg0);
+            return result;
+        }
+    }
+    async updateSupplier(arg0: Supplier): Promise<boolean> {
+        if (this.processError) {
+            try {
+                const result = await this.actor.updateSupplier(arg0);
+                return result;
+            } catch (e) {
+                this.processError(e);
+                throw new Error("unreachable");
+            }
+        } else {
+            const result = await this.actor.updateSupplier(arg0);
+            return result;
+        }
+    }
+    async deleteSupplier(arg0: bigint): Promise<boolean> {
+        if (this.processError) {
+            try {
+                const result = await this.actor.deleteSupplier(arg0);
+                return result;
+            } catch (e) {
+                this.processError(e);
+                throw new Error("unreachable");
+            }
+        } else {
+            const result = await this.actor.deleteSupplier(arg0);
             return result;
         }
     }

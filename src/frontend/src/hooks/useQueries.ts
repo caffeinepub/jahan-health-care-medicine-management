@@ -121,6 +121,24 @@ export function useAddSupplier() {
   });
 }
 
+export function useUpdateSupplier() {
+  const { actor } = useActor();
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (sup: Supplier) => actor!.updateSupplier(sup),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["suppliers"] }),
+  });
+}
+
+export function useDeleteSupplier() {
+  const { actor } = useActor();
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (id: bigint) => actor!.deleteSupplier(id),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["suppliers"] }),
+  });
+}
+
 export function useAddBill() {
   const { actor } = useActor();
   const qc = useQueryClient();

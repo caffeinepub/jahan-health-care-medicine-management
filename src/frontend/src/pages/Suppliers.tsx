@@ -22,7 +22,12 @@ import { Building2, Edit2, Loader2, Plus, Printer, Trash2 } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
 import type { Supplier } from "../backend.d";
-import { useAddSupplier, useAllSuppliers } from "../hooks/useQueries";
+import {
+  useAddSupplier,
+  useAllSuppliers,
+  useDeleteSupplier,
+  useUpdateSupplier,
+} from "../hooks/useQueries";
 
 const EMPTY = {
   name: "",
@@ -35,9 +40,14 @@ const EMPTY = {
 export function Suppliers() {
   const { data: suppliers, isLoading } = useAllSuppliers();
   const addSupplier = useAddSupplier();
+  const updateSupplier = useUpdateSupplier();
+  const deleteSupplier = useDeleteSupplier();
+
   const [open, setOpen] = useState(false);
+  const [editingSupplier, setEditingSupplier] = useState<Supplier | null>(null);
   const [form, setForm] = useState(EMPTY);
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const [deleteConfirmId, setDeleteConfirmId] = useState<bigint | null>(null);
 
   const f = (field: string, val: string) =>
     setForm((p) => ({ ...p, [field]: val }));
@@ -52,27 +62,77 @@ export function Suppliers() {
     return Object.keys(e).length === 0;
   };
 
+  const openAdd = () => {
+    setEditingSupplier(null);
+    setForm(EMPTY);
+    setErrors({});
+    setOpen(true);
+  };
+
+  const openEdit = (sup: Supplier) => {
+    setEditingSupplier(sup);
+    setForm({
+      name: sup.name,
+      contactPerson: sup.contactPerson,
+      phone: sup.phone,
+      email: sup.email,
+      address: sup.address,
+    });
+    setErrors({});
+    setOpen(true);
+  };
+
   const handleSubmit = async () => {
     if (!validate()) return;
-    const sup: Supplier = {
-      id: 0n,
-      name: form.name.trim(),
-      contactPerson: form.contactPerson.trim(),
-      phone: form.phone.trim(),
-      email: form.email.trim(),
-      address: form.address.trim(),
-    };
     try {
-      await addSupplier.mutateAsync(sup);
-      toast.success("Supplier added successfully");
+      if (editingSupplier) {
+        const updated: Supplier = {
+          id: editingSupplier.id,
+          name: form.name.trim(),
+          contactPerson: form.contactPerson.trim(),
+          phone: form.phone.trim(),
+          email: form.email.trim(),
+          address: form.address.trim(),
+        };
+        await updateSupplier.mutateAsync(updated);
+        toast.success("Supplier updated successfully");
+      } else {
+        const sup: Supplier = {
+          id: 0n,
+          name: form.name.trim(),
+          contactPerson: form.contactPerson.trim(),
+          phone: form.phone.trim(),
+          email: form.email.trim(),
+          address: form.address.trim(),
+        };
+        await addSupplier.mutateAsync(sup);
+        toast.success("Supplier added successfully");
+      }
       setOpen(false);
       setForm(EMPTY);
       setErrors({});
+      setEditingSupplier(null);
     } catch {
-      toast.error("Failed to add supplier");
+      toast.error(
+        editingSupplier
+          ? "Failed to update supplier"
+          : "Failed to add supplier",
+      );
     }
   };
 
+  const handleDelete = async (id: bigint) => {
+    try {
+      await deleteSupplier.mutateAsync(id);
+      toast.success("Supplier deleted");
+    } catch {
+      toast.error("Failed to delete supplier");
+    } finally {
+      setDeleteConfirmId(null);
+    }
+  };
+
+  const isPending = addSupplier.isPending || updateSupplier.isPending;
   const printDate = new Date().toLocaleDateString();
 
   return (
@@ -104,11 +164,7 @@ export function Suppliers() {
             <Printer size={15} className="mr-2" /> Print Report
           </Button>
           <Button
-            onClick={() => {
-              setForm(EMPTY);
-              setErrors({});
-              setOpen(true);
-            }}
+            onClick={openAdd}
             data-ocid="suppliers.add_supplier.button"
             className="bg-primary hover:bg-primary/90 text-white"
           >
@@ -211,15 +267,19 @@ export function Suppliers() {
                         <div className="flex gap-1">
                           <button
                             type="button"
+                            onClick={() => openEdit(sup)}
                             className="p-1 rounded hover:bg-muted text-muted-foreground hover:text-foreground transition-colors"
                             data-ocid={`suppliers.edit_button.${idx + 1}`}
+                            title="Edit supplier"
                           >
                             <Edit2 size={13} />
                           </button>
                           <button
                             type="button"
-                            className="p-1 rounded hover:bg-danger-bg text-muted-foreground hover:text-danger transition-colors"
+                            onClick={() => setDeleteConfirmId(sup.id)}
+                            className="p-1 rounded hover:bg-red-50 text-muted-foreground hover:text-red-600 transition-colors"
                             data-ocid={`suppliers.delete_button.${idx + 1}`}
+                            title="Delete supplier"
                           >
                             <Trash2 size={13} />
                           </button>
@@ -245,13 +305,16 @@ export function Suppliers() {
         </CardContent>
       </Card>
 
+      {/* Add / Edit Dialog */}
       <Dialog open={open} onOpenChange={setOpen}>
         <DialogContent
           className="max-w-md"
           data-ocid="suppliers.add_supplier.dialog"
         >
           <DialogHeader>
-            <DialogTitle>Add New Supplier</DialogTitle>
+            <DialogTitle>
+              {editingSupplier ? "Edit Supplier" : "Add New Supplier"}
+            </DialogTitle>
           </DialogHeader>
           <div className="space-y-4 py-2">
             <div className="space-y-1">
@@ -264,7 +327,7 @@ export function Suppliers() {
               />
               {errors.name && (
                 <p
-                  className="text-xs text-danger"
+                  className="text-xs text-destructive"
                   data-ocid="suppliers.name.error_state"
                 >
                   {errors.name}
@@ -280,7 +343,9 @@ export function Suppliers() {
                 placeholder="e.g. Ahmed Khan"
               />
               {errors.contactPerson && (
-                <p className="text-xs text-danger">{errors.contactPerson}</p>
+                <p className="text-xs text-destructive">
+                  {errors.contactPerson}
+                </p>
               )}
             </div>
             <div className="space-y-1">
@@ -292,7 +357,7 @@ export function Suppliers() {
                 placeholder="+92-300-0000000"
               />
               {errors.phone && (
-                <p className="text-xs text-danger">{errors.phone}</p>
+                <p className="text-xs text-destructive">{errors.phone}</p>
               )}
             </div>
             <div className="space-y-1">
@@ -325,14 +390,55 @@ export function Suppliers() {
             </Button>
             <Button
               onClick={handleSubmit}
-              disabled={addSupplier.isPending}
+              disabled={isPending}
               data-ocid="suppliers.add_supplier.submit_button"
               className="bg-primary hover:bg-primary/90 text-white"
             >
-              {addSupplier.isPending ? (
+              {isPending ? (
                 <Loader2 size={14} className="mr-2 animate-spin" />
               ) : null}
-              {addSupplier.isPending ? "Adding..." : "Add Supplier"}
+              {isPending
+                ? editingSupplier
+                  ? "Saving..."
+                  : "Adding..."
+                : editingSupplier
+                  ? "Save Changes"
+                  : "Add Supplier"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Delete Confirmation Dialog */}
+      <Dialog
+        open={deleteConfirmId !== null}
+        onOpenChange={(v) => {
+          if (!v) setDeleteConfirmId(null);
+        }}
+      >
+        <DialogContent className="max-w-sm">
+          <DialogHeader>
+            <DialogTitle>Delete Supplier</DialogTitle>
+          </DialogHeader>
+          <p className="text-sm text-muted-foreground py-2">
+            Are you sure you want to delete this supplier? This action cannot be
+            undone.
+          </p>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setDeleteConfirmId(null)}>
+              Cancel
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={() =>
+                deleteConfirmId !== null && handleDelete(deleteConfirmId)
+              }
+              disabled={deleteSupplier.isPending}
+            >
+              {deleteSupplier.isPending ? (
+                <Loader2 size={14} className="mr-2 animate-spin" />
+              ) : null}
+              Delete
             </Button>
           </DialogFooter>
         </DialogContent>

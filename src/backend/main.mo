@@ -134,20 +134,46 @@ actor {
     };
   };
 
-  var cachedMedicineList : [(Nat, Medicine)] = [];
-  var isMedicineListDirty = true;
+  // Stable storage - persists across upgrades
+  stable var stableMedicines : [Medicine] = [];
+  stable var stableSuppliers : [Supplier] = [];
+  stable var stableBills : [Bill] = [];
+  stable var stablePayments : [Payment] = [];
+  stable var stableDistributions : [Distribution] = [];
 
+  stable var nextMedicineID = 1;
+  stable var nextSupplierID = 1;
+  stable var nextBillID = 1;
+  stable var nextPaymentID = 1;
+  stable var nextDistributionID = 1;
+
+  // In-memory maps (rebuilt from stable storage on upgrade)
   let medicines = Map.empty<Nat, Medicine>();
   let suppliers = Map.empty<Nat, Supplier>();
   let bills = Map.empty<Nat, Bill>();
   let payments = Map.empty<Nat, Payment>();
   let distributions = Map.empty<Nat, Distribution>();
 
-  var nextMedicineID = 1;
-  var nextSupplierID = 1;
-  var nextBillID = 1;
-  var nextPaymentID = 1;
-  var nextDistributionID = 1;
+  // Restore state from stable storage on canister start/upgrade
+  do {
+    for (m in stableMedicines.vals()) { medicines.add(m.id, m) };
+    for (s in stableSuppliers.vals()) { suppliers.add(s.id, s) };
+    for (b in stableBills.vals()) { bills.add(b.id, b) };
+    for (p in stablePayments.vals()) { payments.add(p.id, p) };
+    for (d in stableDistributions.vals()) { distributions.add(d.id, d) };
+  };
+
+  // Save state to stable storage before upgrade
+  system func preupgrade() {
+    stableMedicines := medicines.values().toArray();
+    stableSuppliers := suppliers.values().toArray();
+    stableBills := bills.values().toArray();
+    stablePayments := payments.values().toArray();
+    stableDistributions := distributions.values().toArray();
+  };
+
+  var cachedMedicineList : [(Nat, Medicine)] = [];
+  var isMedicineListDirty = true;
 
   // Medicine management
   public shared func addMedicine(medicineInput : Medicine) : async Nat {
@@ -162,6 +188,28 @@ actor {
     id;
   };
 
+  public shared func updateMedicine(medicineInput : Medicine) : async Bool {
+    switch (medicines.get(medicineInput.id)) {
+      case (?_existing) {
+        medicines.add(medicineInput.id, medicineInput);
+        isMedicineListDirty := true;
+        true;
+      };
+      case (null) { false };
+    };
+  };
+
+  public shared func deleteMedicine(id : Nat) : async Bool {
+    switch (medicines.get(id)) {
+      case (?_existing) {
+        medicines.remove(id);
+        isMedicineListDirty := true;
+        true;
+      };
+      case (null) { false };
+    };
+  };
+
   public query func getMedicine(id : Nat) : async Medicine {
     switch (medicines.get(id)) {
       case (?medicine) { medicine };
@@ -170,11 +218,7 @@ actor {
   };
 
   public query func getAllMedicines() : async [Medicine] {
-    if (isMedicineListDirty) {
-      cachedMedicineList := medicines.toArray();
-      isMedicineListDirty := false;
-    };
-    cachedMedicineList.map(func((_, medicine)) { medicine });
+    medicines.values().toArray();
   };
 
   public query func getLowStockMedicines() : async [Medicine] {
@@ -202,6 +246,26 @@ actor {
     id;
   };
 
+  public shared func updateSupplier(supplierInput : Supplier) : async Bool {
+    switch (suppliers.get(supplierInput.id)) {
+      case (?_existing) {
+        suppliers.add(supplierInput.id, supplierInput);
+        true;
+      };
+      case (null) { false };
+    };
+  };
+
+  public shared func deleteSupplier(id : Nat) : async Bool {
+    switch (suppliers.get(id)) {
+      case (?_existing) {
+        suppliers.remove(id);
+        true;
+      };
+      case (null) { false };
+    };
+  };
+
   public query func getSupplier(id : Nat) : async Supplier {
     switch (suppliers.get(id)) {
       case (?supplier) { supplier };
@@ -225,11 +289,25 @@ actor {
     id;
   };
 
+  public shared func updateBill(billInput : Bill) : async Bool {
+    switch (bills.get(billInput.id)) {
+      case (?_existing) {
+        bills.add(billInput.id, billInput);
+        true;
+      };
+      case (null) { false };
+    };
+  };
+
   public query func getBill(id : Nat) : async Bill {
     switch (bills.get(id)) {
       case (?bill) { bill };
       case (null) { Runtime.trap("Bill not found") };
     };
+  };
+
+  public query func getAllBills() : async [Bill] {
+    bills.values().toArray();
   };
 
   public query func getBillsBySupplier(supplierID : Nat) : async [Bill] {
@@ -264,6 +342,10 @@ actor {
     };
   };
 
+  public query func getAllPayments() : async [Payment] {
+    payments.values().toArray();
+  };
+
   // Distribution management
   public shared func addDistribution(distributionInput : Distribution) : async Nat {
     let id = nextDistributionID;
@@ -281,6 +363,10 @@ actor {
       case (?distribution) { distribution };
       case (null) { Runtime.trap("Distribution not found") };
     };
+  };
+
+  public query func getAllDistributions() : async [Distribution] {
+    distributions.values().toArray();
   };
 
   public query func getDistributionsByDepartment(department : Department) : async [Distribution] {
